@@ -10,14 +10,23 @@ This document is the single source of truth for PaCiFaX's intended hardware impl
 
 The NEC PC-FX (1994) is a 32-bit CD-ROM console descended from the PC Engine lineage. Key facts:
 
-- **CPU**: NEC V810 @ 21.47727 MHz (32-bit RISC, similar to Virtual Boy's)
+- **CPU**: NEC V810 @ 21.47727 MHz (32-bit RISC)
 - **RAM**: 2 MB main + 256 KB backup + 512 KB video + 256 KB audio
 - **Video**: Custom **KING** chip + two HuC6270A-style VDCs + HuC6261-style VCE, YUV-native output with MotionJPEG hardware decode, alpha blending, rotation/scaling
 - **Audio**: 6-channel ADPCM + CD-DA passthrough
 - **Storage**: Double-speed CD-ROM drive
 - **Display**: 256x224 to 352x240 typical, NTSC
 
-## 2. Target platform
+## 2. Project structure
+
+PaCiFaX is split into two cooperating projects:
+
+- **[`v810-hdl`](https://github.com/buggerman/v810-hdl)** — standalone, reusable V810 CPU core in SystemVerilog. Developed and tested independently. Unlocks PC-FX, Virtual Boy, and V810-family arcade boards.
+- **`PaCiFaX`** (this repo) — PC-FX-specific subsystems (KING, VDCs, VCE, ADPCM, CD). Consumes `v810-hdl` as a dependency.
+
+This split lets the CPU receive community review independently and remains useful even if PaCiFaX stalls.
+
+## 3. Target platform
 
 - DE10-Nano (Cyclone V SE 5CSEBA6U23I7)
   - ~110K logic elements
@@ -27,11 +36,11 @@ The NEC PC-FX (1994) is a 32-bit CD-ROM console descended from the PC Engine lin
 - 128 MB SDRAM module (standard MiSTer add-on)
 - MiSTer framework (`sys/` submodule) for video output, input, HPS bridge, OSD
 
-## 3. Top-level block diagram
+## 4. Top-level block diagram
 
 TODO: ASCII diagram of top module showing V810 ↔ bus arbiter ↔ (KING, VDC-A, VDC-B, VCE, ADPCM, CD iface, main RAM, BIOS ROM). Include clock domains and SDRAM mapping.
 
-## 4. Clock domains
+## 5. Clock domains
 
 | Domain | Frequency | Consumers |
 |---|---|---|
@@ -42,24 +51,26 @@ TODO: ASCII diagram of top module showing V810 ↔ bus arbiter ↔ (KING, VDC-A,
 
 Clock relationships and CDC strategy: TODO.
 
-## 5. Memory map
+## 6. Memory map
 
 TODO: full V810 physical address map — ROM, RAM, MMIO windows for KING, VDCs, VCE, ADPCM, CD controller.
 
-## 6. Subsystems
+## 7. Subsystems
 
-### 6.1 V810 CPU core
+### 7.1 V810 CPU core
 
-- 32-bit RISC, 32 general-purpose registers, 5-stage pipeline
-- Hardware floating-point unit (FPU)
-- Bit-string operations
-- Interrupt controller integrated
+**Delivered via [`v810-hdl`](https://github.com/buggerman/v810-hdl).** See that project for CPU-specific architecture, test strategy, and status.
 
-**Decision pending**: reuse Virtual Boy core's V810 (if license-compatible and extractable), port an existing open-source V810 (e.g., from Mednafen as behavioral reference only — not HDL), or write from scratch.
+**Status of prior-art reuse**: investigated and ruled out. See [`docs/RESEARCH-V810.md`](RESEARCH-V810.md) for full notes. Key findings:
 
-Estimated LE budget: 8–12K.
+- No MiSTer Virtual Boy core exists (despite community expectations).
+- No open-source V810 HDL implementation exists anywhere, public or academic.
+- MAME (C++) and Mednafen (C++) V810 emulators exist — usable as behavioral spec, not as HDL source.
+- Writing from scratch is the only path. Estimated 12–18 months for a verified standalone V810.
 
-### 6.2 KING (custom chip)
+Estimated LE budget: 8–12K (consumed at PaCiFaX integration time).
+
+### 7.2 KING (custom chip)
 
 The hardest subsystem. Responsibilities:
 
@@ -76,35 +87,35 @@ MotionJPEG decode is unusual for FPGA retro work. Expect this to consume signifi
 
 Estimated LE budget: 30–50K (largest single subsystem).
 
-### 6.3 VDC-A / VDC-B (HuC6270A-equivalent)
+### 7.3 VDC-A / VDC-B (HuC6270A-equivalent)
 
 Inherits directly from PC Engine lineage. Two instances run in parallel for background/sprite layering. Substantially similar to existing MiSTer PC Engine core — reuse opportunity likely.
 
 Estimated LE budget: 6–8K each.
 
-### 6.4 VCE (HuC6261-equivalent)
+### 7.4 VCE (HuC6261-equivalent)
 
 Video output encoder. Mixes VDC outputs with KING's background/MotionJPEG layers, produces final YUV→RGB output for MiSTer's scaler. Priority and chroma-key logic here.
 
 Estimated LE budget: 4–6K.
 
-### 6.5 ADPCM audio
+### 7.5 ADPCM audio
 
-6-channel Okawa-style ADPCM. Sourced from 256 KB audio RAM. Mix with CD-DA stream for final output.
+6-channel ADPCM. Sourced from 256 KB audio RAM. Mix with CD-DA stream for final output.
 
 Estimated LE budget: 3–5K.
 
-### 6.6 CD-ROM subsystem
+### 7.6 CD-ROM subsystem
 
 Virtual drive backed by CD image (CUE/BIN, CHD) from SD card via HPS. Handles SCSI-like command protocol, sector buffering, CD-DA audio streaming. Model after existing MiSTer PSX/Saturn/PCE-CD CD subsystems.
 
 Estimated LE budget: 4–6K.
 
-## 7. LE budget summary (preliminary)
+## 8. LE budget summary (preliminary)
 
 | Subsystem | Estimated LEs |
 |---|---|
-| V810 CPU | 8–12K |
+| V810 CPU (from v810-hdl) | 8–12K |
 | KING | 30–50K |
 | VDC-A + VDC-B | 12–16K |
 | VCE | 4–6K |
@@ -115,15 +126,15 @@ Estimated LE budget: 4–6K.
 
 This is tight for Cyclone V's 110K. Optimization and careful sharing (especially in KING) will be required. Validate early via synthesis-only builds of the hardest subsystem.
 
-## 8. Open questions
+## 9. Open questions
 
-- Is the existing MiSTer Virtual Boy V810 reusable, and under what license?
-- What is the exact MotionJPEG specification used by PC-FX? Standard baseline, or custom variant?
+- What is the exact MotionJPEG specification used by PC-FX? Standard JPEG baseline, or custom variant?
 - Can YUV processing be done in YUV end-to-end, or must we convert to RGB internally and back?
 - Real PC-FX hardware access: who in the community has a capture setup for cross-validation?
-- Does any existing FPGA JPEG decoder (open-source) fit our LE budget?
+- Does any existing open-source FPGA JPEG decoder fit our LE budget?
+- Which MiSTer PC Engine core is the cleanest source for VDC reuse?
 
-## 9. Non-goals
+## 10. Non-goals
 
 - FX-SCSI peripherals (keyboard, mouse)
 - PC-FXGA (expansion card for PCs) compatibility

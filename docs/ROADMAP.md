@@ -1,32 +1,33 @@
 # PaCiFaX Roadmap
 
-> Realistic target: 2–4 years to first playable release for a dedicated solo developer with prior HDL experience. Adjust expectations accordingly.
+> Realistic target: **2–4 years to first playable release** for a dedicated solo developer with prior HDL experience. The V810 is longer than originally estimated — see Phase 1.
+
+PaCiFaX is split into two projects. The CPU is delivered via the standalone [`v810-hdl`](https://github.com/buggerman/v810-hdl) project. This roadmap covers both.
 
 ## Phase 0 — Research & Architecture (current)
 
 **Goal**: know exactly what we're building before writing Verilog.
 
+- [x] Investigate reuse of existing MiSTer Virtual Boy core V810 — **ruled out (core does not exist)**
+- [x] Survey open-source V810 HDL implementations — **none found**
+- [x] Draft V810 reference research note ([`docs/RESEARCH-V810.md`](RESEARCH-V810.md))
 - [ ] Mirror Mednafen PC-FX source locally, annotate architecture
-- [ ] Verify whether MiSTer Virtual Boy V810 is reusable (license, code quality, extractability)
-- [ ] Complete `docs/ARCHITECTURE.md` — fill all TODO sections
-- [ ] Finalize top-level block diagram and memory map
+- [ ] Complete `docs/ARCHITECTURE.md` — fill all TODO sections (block diagram, memory map, clock domain details)
 - [ ] Identify reference hardware source (capture-enabled PC-FX owner in community)
 - [ ] Inventory open-source FPGA JPEG decoders; pick reference or decide to write from scratch
 - [ ] Announce intent on MiSTer forum and Discord; recruit collaborators
 
 **Exit criteria**: architecture doc is complete and reviewed by at least one experienced MiSTer core developer.
 
-## Phase 1 — V810 CPU (standalone)
+## Phase 1 — V810 CPU (delivered by [`v810-hdl`](https://github.com/buggerman/v810-hdl))
 
-**Goal**: a working V810 core with testbench, independent of PC-FX system integration.
+**Goal**: a verified, reusable V810 CPU core in SystemVerilog. Released as its own artifact.
 
-- [ ] Decide: reuse, port, or write from scratch
-- [ ] Implement or integrate V810
-- [ ] Build a testbench harness (Verilator or iverilog)
-- [ ] Pass known V810 test ROMs (reuse Virtual Boy test suites where applicable)
-- [ ] Synthesize standalone — verify LE usage matches estimate
+This phase is the longest single phase of the project — **estimated 12–18 months** — because no prior HDL exists and V810 is non-trivial (32 registers, 5-stage pipeline with hardware interlocks, hardware FPU, bit-string ops).
 
-**Exit criteria**: V810 passes all available test ROMs bit-exact against Mednafen reference traces.
+See [`v810-hdl` roadmap](https://github.com/buggerman/v810-hdl) for phase-internal milestones.
+
+**Exit criteria**: passes a suite of C-language test programs compiled via `v810-gcc`, with bit-exact results matching MAME's V810 emulator.
 
 ## Phase 2 — Minimum viable system bring-up
 

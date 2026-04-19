@@ -1,0 +1,45 @@
+# Quartus Prime build artifacts
+db/
+incremental_db/
+output_files/
+qdb/
+.qsys_edit/
+*.qws
+*.qws.bak
+*.rpt
+*.summary
+*.smsg
+*.pin
+*.pof
+*.sof
+*.jdi
+*.bak
+*.done
+
+# Simulation
+*.vvp
+*.vcd
+*.fst
+*.wlf
+wlft*
+transcript
+simulation/modelsim/
+simulation/questa/
+simulation/verilator/
+work/
+
+# Synthesized outputs
+build/
+*.rbf
+!releases/*.rbf
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local secrets or notes
+.env
+NOTES_LOCAL.md
